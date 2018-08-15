@@ -49,19 +49,8 @@ def _parse_fileContent(fileContent):
     label_set = list()
     numerical_label= list()
 
-    for row in file_without_attr:
-        label = row[-1]
-        if label not in label_set:
-            label_set.append(label)
-            numerical_label.append(1)
-        numerical_label.append(label_set.index(label)+1)
 
-    return(
-        attrnames,
-        dat,
-        label_set,
-        numerical_label
-    )
+
 
 def create_data_structure(inputFileName, outputFileName =''):
     '''
