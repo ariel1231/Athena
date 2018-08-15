@@ -22,6 +22,7 @@ class Attribute(object):
         self.map = None # This is a mapper from string value to integer value
         self.numerical_label = None # value to name
 
+   #TODO: add a neat __str__
 
 
 

@@ -38,8 +38,8 @@ class DataPoint(np.matrix):
             #print(type(obj))
             return(obj)
         else:
-            raise ValueError("The length of the attribute list does not match "
-                             "the length of data array.")
+            raise ValueError("The length of the attribute list",len(attribute_list)," does not match "
+                             "the length of data array.", len(data_array))
 
 
     def __array_finalize__(self,obj):
@@ -58,7 +58,7 @@ class DataPoint(np.matrix):
         self.id = getattr(obj,'id',None)
         self.info = getattr(obj,'info',None)
         self.experiment_label = getattr(obj,'experiment_label',None)
-        #TODO: change to matrix, make it more clear
+
 
 
 
@@ -113,9 +113,6 @@ if __name__ == "__main__":
     d = b+c
     print(d,type(d),d.id)
 
-    e = np.vstack((b,c))
-    print(e)
-    print('here',type(e[0]),e[0].id)
     #print(b.attribute_list)
 
 

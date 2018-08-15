@@ -45,17 +45,18 @@ class DataSet(object):
     # TODO: finish the documentation
 
     def __init__(self,raw_dat,attr_list=None):
-        self.dataIDs = list()
+        self.data = dict()
         self.attributes = dict()
-        self.dataMatrix = list()
 
+        self._dataMatrix = np.zeros(shape=np.shape(raw_dat))
         self._raw_dat = raw_dat
         self._raw_attribute = attr_list
+        self._id_list = list()
 
 
 
 
-    def generate_id(self,prefix="",length=5):
+    def _generate_id(self,prefix="",length=5):
         """
         generate an unique id for each data point in the data file.
         :param:
@@ -72,7 +73,7 @@ class DataSet(object):
         id_num = int(rand.random() * 10**length)
         id_num_fixed_length = str(id_num).zfill(length)
         id = prefix + str(id_num_fixed_length)
-        while id in self.dataIDs:
+        while id in self._id_list:
             # repeated id identified, generate a new one
             if counter < MAX_REPEATED_TIME:
                 id_num = int(rand.random() * 10 ** length) #generate another value
@@ -81,19 +82,18 @@ class DataSet(object):
                 counter = counter + 1
             else:
                 raise ValueError("Cannot generate an unique id for the data point! ")
-
-        self.dataIDs.append(id)
+        self._id_list.append(id)
         return id
 
-    def add_attributes(self):
+    def set_attributes(self):
         """
         to be done
         :param:
         :return:
         """
 
-
         data_array = cp.deepcopy(self._raw_dat)
+        #print('data_array',data_array,type(data_array),data_array is self._raw_dat)
         sample = data_array[0]
 
         #TODO: consider situation with 'NA' or empty value
@@ -108,8 +108,13 @@ class DataSet(object):
                 attr.map = self._generate_mapper(data_array,i)
                 attr.numerical_label = {v: k for k, v in attr.map.items()}
             self.attributes[attrname] = attr
-        #print(data_array)
-        return data_array
+
+        #print('data_array', data_array, type(data_array), data_array is self._raw_dat)
+        self._dataMatrix = np.asarray(data_array)
+
+        #print('dataMatrix: ',self._dataMatrix)
+
+
 
 
 
@@ -136,7 +141,7 @@ class DataSet(object):
 
 
 
-    def setup_data(self,data_point_array):
+    def setup_data(self,prefix=""):
 
         """
         MUST CALLED AFTER self.add_attribute.
@@ -157,26 +162,16 @@ class DataSet(object):
         if len(self._raw_attribute) is not len(self.attributes):
             raise ValueError("Please try add_data_point_function!")
 
-        for i,item in enumerate(data_point_array):
-            unique_id = self.generate_id('iris_')
+        for i,item in enumerate(self._dataMatrix):
+            unique_id = self._generate_id(prefix)
             data_point = DataPoint(item, unique_id, self._raw_attribute)
-            #print(data_point, type(data_point), isinstance(data_point,np.ndarray))
-            self.dataMatrix.append(data_point)
+            self.data[unique_id] = data_point
 
         #
-        print(self.dataMatrix)
-        print(self.dataIDs)
 
 
 
-
-
-
-
-
-
-
-    def _generate_labels(self,label_attr):
+    def _generate_labels(self,label_to_generate):
         """
         Generate certain labels according to attribute selected.
         Take iris flower data set as an example,
@@ -187,15 +182,19 @@ class DataSet(object):
         :return:
         """
         #TODO : change to the list ops data matrix
-        if isinstance(label_attr,list):
+        if isinstance(label_to_generate,str):
+            label_to_generate = [label_to_generate]
+            #print(type(label_to_generate))
+        if isinstance(label_to_generate,list):
             # axis 0 for row , 1 for col
             #print('\n\n',"----"*10, 'debugging label generation','----'*10,'\n\n')
-            label_index = self._locate_attr_pos(label_attr)
-            label_cols = self.dataMatrix[:,label_index]
+            label_index = self._locate_attr_pos(label_to_generate)
+            #print(label_index)
+            label_cols = self._dataMatrix[:,label_index]
             #print(label_cols)
             #TODO: case insensitive case
             #TODO: ordering
-            attr_objs = [self.attributes[item] for item in label_attr]
+            attr_objs = [self.attributes[item] for item in label_to_generate]
             #print('get attributes',attr_objs)
             #print('How many attributes?', len(attr_objs))
             label_dict = dict()
@@ -225,17 +224,17 @@ class DataSet(object):
                     labels[i] = label_dict[str(item)]
                 #
             #print('legend: ',legend,'\n label:',labels,'\n',"label_dict: ",label_dict)
+            ids = self._id_list
+            return (labels,legend,ids)
 
-            return (labels,legend,label_dict)
-
-        elif isinstance(label_attr,dict):
+        elif isinstance(label_to_generate,dict):
             return
 
 
     def generate_data_partition_by_value(self):
         pass
 
-    def generate_data_partition(self,label_attr,attr_list=None):
+    def generate_data_partition(self,labels,exclude_attr_list=None):
         """
 
         generate data matrix for classification tasks.
@@ -246,24 +245,27 @@ class DataSet(object):
 
         #TODO: Consider ordering for efficiency
         #TODO: figure out the nested ops of list and nparray
-        dat = cp.deepcopy(self.dataMatrix)
+        dat = cp.deepcopy(self._dataMatrix)
         #print(type(dat))
         print('original data matrix is of shape',np.shape(dat))
         #print(type(dat[0]))
-        if attr_list is not None:
-            attr_list_index = self._locate_attr_pos(attr_list)
+        delete_index = self._locate_attr_pos(labels)
+        if exclude_attr_list is not None:
+            delete_index.extend(self._locate_attr_pos(exclude_attr_list))
             # axis 0 for row, 1 for col
             #TODO write a deletion function.
-            dat = [np.delete(item,attr_list_index,axis=1) for item in dat]
-                #np.delete(dat,attr_list_index,axis=1)
-        label_index = self._locate_attr_pos(label_attr)
-        #labels,legend,label_dict = self._generate_labels(label_attr)
+
+
+        data_label,legend,ids = self._generate_labels(labels)
         # axis 0 for row, 1 for col
-        #dat = np.delete(dat,label_index,axis=1)
+        dat = np.delete(dat,delete_index,axis=1)
         #print(dat[:,1:]) # list operation
-        print(dat)
+
         #print(type(dat[0]))
-        return dat#,labels
+        return (dat,
+                data_label,
+                legend,
+                ids)
 
 
 
@@ -276,7 +278,7 @@ class DataSet(object):
 
 
 
-    def _locate_attr_pos(self,attr_list,case_insensitive=True):
+    def _locate_attr_pos(self,attr_list,case_insensitive=False):
         """
         locate position of attributes according to their str value
         notice: default case insensitive comparison
@@ -303,26 +305,46 @@ class DataSet(object):
 
 if __name__ == "__main__":
 
+
+
     data_array = list()
-    data_array.append([1, 'apple',3.6,2,'Alice'])
+    data_array.append([1, 'bridge',3.6,2,'Alice'])
     data_array.append([0.5, 'cat_walk',4.3,6.7,'Peter'])
     data_array.append([32,'apple',-2,10,'Alice'])
 
     attr_list = ['value', 'kind','size','price','owner']
 
     a = DataSet(data_array,attr_list)
-    numerical_data_array = a.add_attributes()
-    a.setup_data(numerical_data_array)
-    print(type(a.dataMatrix[0]))
-    #print(a.attributes)
-    #print(a.attributes['value'].name,a.attributes['kind'].is_numerical)
 
-    label_attr_list = ['kind','owner']
-    #a._generate_labels(label_attr_list)
-    #print(a.dataMatrix)
-    dat = a.generate_data_partition(label_attr_list)
-    #print('data\n',dat)
-    #print('labels\n',labels)
+    #print("\n\ntest generate id...\n\n")
+    #prefix = "irix_"
+    #print(a.generate_id(prefix=prefix))
+
+    print("\n\ntest set_attribute...")
+    a.set_attributes()
+    attr_dict = a.attributes
+    print(attr_dict.keys())
+    print(attr_dict['owner'].map)
+
+    print("\n\ntest data set up...")
+    a.setup_data('test_')
+    print(a.data)
+    print(list(a.data.keys()))
+
+    #print("\n\ntest generating labels...")
+    #a._generate_labels(["kind"])
+
+    print("\n\ntest generating labels...")
+    dat,label,legend,ids = a.generate_data_partition(labels=["owner"],exclude_attr_list=['kind'])
+    print('data:\n',dat)
+    print('legend:\n',legend)
+    print('label:\n',label)
+    print('id:\n',ids)
+    #print('label_dict\n',label_dict)
+
+
+
+
 
 
 
