@@ -223,9 +223,9 @@ class DataSet(object):
                 else:
                     labels[i] = label_dict[str(item)]
                 #
-            print('legend: ',legend,'\n label:',labels,'\n',"label_dict: ",label_dict)
-
-            return (labels,legend,label_dict)
+            #print('legend: ',legend,'\n label:',labels,'\n',"label_dict: ",label_dict)
+            ids = self._id_list
+            return (labels,legend,ids)
 
         elif isinstance(label_to_generate,dict):
             return
@@ -256,14 +256,16 @@ class DataSet(object):
             #TODO write a deletion function.
 
 
-        data_label,legend,label_dict = self._generate_labels(labels)
+        data_label,legend,ids = self._generate_labels(labels)
         # axis 0 for row, 1 for col
         dat = np.delete(dat,delete_index,axis=1)
         #print(dat[:,1:]) # list operation
 
         #print(type(dat[0]))
-        return (dat, data_label,
-                legend,label_dict)
+        return (dat,
+                data_label,
+                legend,
+                ids)
 
 
 
@@ -333,10 +335,11 @@ if __name__ == "__main__":
     #a._generate_labels(["kind"])
 
     print("\n\ntest generating labels...")
-    dat,label,legend,_ = a.generate_data_partition(labels=["owner"],exclude_attr_list=['kind'])
+    dat,label,legend,ids = a.generate_data_partition(labels=["owner"],exclude_attr_list=['kind'])
     print('data:\n',dat)
     print('legend:\n',legend)
     print('label:\n',label)
+    print('id:\n',ids)
     #print('label_dict\n',label_dict)
 
 

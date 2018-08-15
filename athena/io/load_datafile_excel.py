@@ -44,10 +44,10 @@ def _parse_fileContent(fileContent):
     2.
     '''
     attrnames = tuple(fileContent[0])
-    file_without_attr = np.array(fileContent[1:])
-    dat = file_without_attr[:,0:-1]
-    label_set = list()
-    numerical_label= list()
+    dat = np.array(fileContent[1:])
+
+
+    return (attrnames,dat)
 
 
 
@@ -84,8 +84,8 @@ if __name__ == "__main__":
     filename = "/Users/ariel/Documents/work/Athena/data/iris/iris_data.csv"
     iris_dat = load_entire_datafile(filename)
     print(len(iris_dat))
-    attr_name,data,label_set,label = _parse_fileContent(iris_dat)
-    print(attr_name,'\t',np.shape(data),'\t',label_set,'\n',label)
+    attr_name,data = _parse_fileContent(iris_dat)
+    print(attr_name,'\t',np.shape(data),'\t first line:',data[0])
 
 
 
